@@ -1,0 +1,254 @@
+.overview-grid-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+/* Need Attention Section */
+.attention-section {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px 24px;
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-xs);
+}
+
+.attention-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.attention-icon {
+  color: #b45309;
+}
+
+.attention-title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.attention-badge-count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.attention-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.attention-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-subtle);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.attention-card.critical {
+  border-left: 4px solid #ef4444;
+}
+
+.attention-card.warning {
+  border-left: 4px solid #f59e0b;
+}
+
+.attention-card-main {
+  flex: 1;
+  min-width: 260px;
+}
+
+.attention-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.attention-card-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.attention-card-urgency {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #b91c1c;
+}
+
+.attention-card.warning .attention-card-urgency {
+  color: #b45309;
+}
+
+.attention-card-desc {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+}
+
+.attention-card-target {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+/* Two-column layout */
+.overview-two-col {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 24px;
+}
+
+.content-panel {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  box-shadow: var(--shadow-xs);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.panel-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.panel-action-link {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.panel-action-link:hover {
+  text-decoration: underline;
+}
+
+/* Structured Recent Repairs Table */
+.repairs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.repairs-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  font-size: 0.6875rem;
+  letter-spacing: 0.4px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.repairs-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+  vertical-align: middle;
+}
+
+.repairs-table tr:last-child td {
+  border-bottom: none;
+}
+
+.repair-date {
+  font-family: var(--font-mono);
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+}
+
+.repair-appliance-name {
+  font-weight: 600;
+}
+
+.repair-type-text {
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+}
+
+.repair-cost {
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+/* Quick appliance list */
+.quick-appliance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quick-appliance-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-subtle);
+  background-color: var(--color-surface-subtle);
+}
+
+.quick-appliance-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-dot-active {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #10b981;
+}
+
+.quick-appliance-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.quick-appliance-model {
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
+}
+
+.quick-appliance-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 1024px) {
+  .overview-two-col {
+    grid-template-columns: 1fr;
+  }
+}

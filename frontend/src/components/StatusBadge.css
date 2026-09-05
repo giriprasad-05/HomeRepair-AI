@@ -1,0 +1,111 @@
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+  text-transform: capitalize;
+}
+
+.status-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Status variants */
+.status-badge.status-open {
+  background-color: var(--status-open-bg);
+  color: var(--status-open-text);
+  border-color: var(--status-open-border);
+}
+.status-badge.status-open .status-badge-dot {
+  background-color: var(--status-open-text);
+}
+
+.status-badge.status-investigating {
+  background-color: var(--status-investigating-bg);
+  color: var(--status-investigating-text);
+  border-color: var(--status-investigating-border);
+}
+.status-badge.status-investigating .status-badge-dot {
+  background-color: var(--status-investigating-text);
+}
+
+.status-badge.status-repair_recommended {
+  background-color: var(--status-recommended-bg);
+  color: var(--status-recommended-text);
+  border-color: var(--status-recommended-border);
+}
+.status-badge.status-repair_recommended .status-badge-dot {
+  background-color: var(--status-recommended-text);
+}
+
+.status-badge.status-repair_in_progress {
+  background-color: var(--status-progress-bg);
+  color: var(--status-progress-text);
+  border-color: var(--status-progress-border);
+}
+.status-badge.status-repair_in_progress .status-badge-dot {
+  background-color: var(--status-progress-text);
+}
+
+.status-badge.status-resolved {
+  background-color: var(--status-resolved-bg);
+  color: var(--status-resolved-text);
+  border-color: var(--status-resolved-border);
+}
+.status-badge.status-resolved .status-badge-dot {
+  background-color: var(--status-resolved-text);
+}
+
+/* Severity variants */
+.status-badge.severity-low {
+  background-color: var(--severity-low-bg);
+  color: var(--severity-low-text);
+  border-color: var(--severity-low-border);
+}
+
+.status-badge.severity-medium {
+  background-color: var(--severity-medium-bg);
+  color: var(--severity-medium-text);
+  border-color: var(--severity-medium-border);
+}
+
+.status-badge.severity-high {
+  background-color: var(--severity-high-bg);
+  color: var(--severity-high-text);
+  border-color: var(--severity-high-border);
+}
+
+.status-badge.severity-critical {
+  background-color: var(--severity-critical-bg);
+  color: var(--severity-critical-text);
+  border-color: var(--severity-critical-border);
+}
+
+/* Warranty variants */
+.status-badge.warranty-valid {
+  background-color: #f0fdf4;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.status-badge.warranty-expiring_soon {
+  background-color: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+.status-badge.warranty-expired {
+  background-color: #f8fafc;
+  color: #64748b;
+  border-color: #e2e8f0;
+}

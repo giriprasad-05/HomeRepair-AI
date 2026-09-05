@@ -1,0 +1,114 @@
+:root {
+  /* Colors: Restrained, trustworthy, calm, service-oriented */
+  --color-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f1f5f9;
+  --color-surface-subtle: #f8fafc;
+  
+  --color-border: #e2e8f0;
+  --color-border-subtle: #edf2f7;
+  --color-border-strong: #cbd5e1;
+
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748b;
+  --color-text-inverse: #ffffff;
+
+  --color-primary: #1e3a8a;
+  --color-primary-hover: #1e40af;
+  --color-primary-light: #eff6ff;
+
+  --color-accent: #2563eb;
+  --color-accent-subtle: #dbeafe;
+
+  /* Status and Severity Palettes */
+  --status-open-bg: #eff6ff;
+  --status-open-text: #1d4ed8;
+  --status-open-border: #bfdbfe;
+
+  --status-investigating-bg: #fefce8;
+  --status-investigating-text: #854d0e;
+  --status-investigating-border: #fef08a;
+
+  --status-recommended-bg: #fff7ed;
+  --status-recommended-text: #c2410c;
+  --status-recommended-border: #fed7aa;
+
+  --status-progress-bg: #faf5ff;
+  --status-progress-text: #6b21a8;
+  --status-progress-border: #e9d5ff;
+
+  --status-resolved-bg: #f0fdf4;
+  --status-resolved-text: #15803d;
+  --status-resolved-border: #bbf7d0;
+
+  --severity-low-bg: #f1f5f9;
+  --severity-low-text: #475569;
+  --severity-low-border: #cbd5e1;
+
+  --severity-medium-bg: #fffbeb;
+  --severity-medium-text: #b45309;
+  --severity-medium-border: #fde68a;
+
+  --severity-high-bg: #fff1f2;
+  --severity-high-text: #be123c;
+  --severity-high-border: #fecdd3;
+
+  --severity-critical-bg: #fef2f2;
+  --severity-critical-text: #991b1b;
+  --severity-critical-border: #fca5a5;
+
+  /* Spacing & Layout */
+  --sidebar-width: 260px;
+  --header-height: 64px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  /* Shadows: subtle, not floating high */
+  --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.08), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+
+  /* Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+input, select, textarea {
+  font-family: inherit;
+}
