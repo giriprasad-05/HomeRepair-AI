@@ -38,11 +38,33 @@ else:
         "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "20")),
     })
 
-try:
-    engine = create_engine(DATABASE_URL, **engine_kwargs)
-except Exception:
-    # If psycopg2 / PostgreSQL driver is not yet available, fallback gracefully for schema generation & offline tooling
-    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+def _create_and_verify_engine():
+    global DATABASE_URL
+    if not DATABASE_URL.startswith("sqlite"):
+        try:
+            test_engine = create_engine(DATABASE_URL, **engine_kwargs)
+            with test_engine.connect() as conn:
+                pass
+            return test_engine
+        except Exception:
+            # Fallback gracefully to persistent SQLite database file in backend root
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            sqlite_file = os.path.join(base_dir, "homerepair_ai.db")
+            DATABASE_URL = f"sqlite:///{sqlite_file}"
+            return create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+    else:
+        return create_engine(DATABASE_URL, **engine_kwargs)
+
+engine = _create_and_verify_engine()
+
+# Enable foreign keys for SQLite
+from sqlalchemy import event
+@event.listens_for(engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    if str(engine.url).startswith("sqlite"):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 
 # Session factory
 SessionLocal = sessionmaker(

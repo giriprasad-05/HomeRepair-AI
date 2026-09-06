@@ -3,6 +3,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.repair import RepairHistory
+from app.models.enums import IssueStatus, RepairOutcome
 from app.schemas.repair import RepairHistoryCreate
 from app.services.appliance_service import ApplianceService
 from app.services.issue_service import IssueService
@@ -30,6 +31,7 @@ class RepairService:
             )
 
         # Validate issue belongs to appliance if issue_id is provided
+        issue = None
         if repair_in.issue_id is not None:
             issue = IssueService.get_issue_by_id(db, repair_in.issue_id)
             if issue.appliance_id != appliance_id:
@@ -50,6 +52,22 @@ class RepairService:
             notes=repair_in.notes,
         )
         db.add(repair)
+
+        if issue is not None and repair_in.outcome:
+            try:
+                if isinstance(repair_in.outcome, RepairOutcome):
+                    issue.repair_outcome = repair_in.outcome
+                else:
+                    issue.repair_outcome = RepairOutcome(str(repair_in.outcome).lower())
+            except (ValueError, AttributeError):
+                pass
+            if issue.repair_outcome == RepairOutcome.SUCCESSFUL:
+                issue.status = IssueStatus.RESOLVED
+            elif issue.repair_outcome == RepairOutcome.FAILED:
+                issue.status = IssueStatus.FAILED
+            if repair_in.notes or repair_in.description:
+                issue.repair_notes = repair_in.notes or repair_in.description
+
         db.commit()
         db.refresh(repair)
         return repair

@@ -1,12 +1,23 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from contextlib import asynccontextmanager
 from app.api import api_router
+from app.database.base import Base
+from app.database.session import engine
+import app.models  # Ensure all models are registered
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize tables
+    Base.metadata.create_all(bind=engine)
+    yield
 
 app = FastAPI(
     title="HomeRepair AI API",
     description="Backend API for HomeRepair AI agent system",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 # Configure CORS

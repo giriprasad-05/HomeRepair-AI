@@ -4,7 +4,7 @@ from sqlalchemy import String, Text, DateTime, ForeignKey, Enum as SQLEnum, Inde
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
-from app.models.enums import IssueSeverity, IssueStatus
+from app.models.enums import IssueSeverity, IssueStatus, RepairOutcome
 
 
 class IssueReport(Base):
@@ -30,6 +30,16 @@ class IssueReport(Base):
         nullable=False,
         index=True
     )
+    # AI diagnosis output stored as JSON text
+    diagnosis_result: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # Outcome after repair attempt
+    repair_outcome: Mapped[Optional[RepairOutcome]] = mapped_column(
+        SQLEnum(RepairOutcome, name="repair_outcome_enum", native_enum=False),
+        nullable=True,
+        index=True
+    )
+    repair_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
     reported_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

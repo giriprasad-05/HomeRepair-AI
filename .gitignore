@@ -34,11 +34,7 @@ wheels/
 htmlcov/
 .pytest_cache/
 
-# Environment variables
-.env
-.env.local
-.env.*.local
-!.env.example
+
 
 # IDE & Editor
 .vscode/

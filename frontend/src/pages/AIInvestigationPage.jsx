@@ -1,29 +1,130 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PageHeader from '../components/PageHeader';
 import StatusBadge from '../components/StatusBadge';
-import { MOCK_APPLIANCES, MOCK_ISSUES } from '../utils/mockData';
+import { ApplianceService, IssueService, AgentService } from '../services/api';
 import './AIInvestigationPage.css';
 
-export function AIInvestigationPage({ initialApplianceId, initialIssueId }) {
+// Simulated timeline steps for the UX
+const AGENT_STEPS = [
+  "Loaded appliance history",
+  "Retrieved previous repair memory",
+  "Analyzed reported symptoms",
+  "Checked warranty",
+  "Reviewed historical repair outcomes",
+  "Evaluated diagnostic evidence",
+  "Preparing recommendation..."
+];
+
+export function AIInvestigationPage({ initialApplianceId, initialIssueId } = {}) {
+  const [appliances, setAppliances] = useState([]);
+  const [issues, setIssues] = useState([]);
   const [selectedApplianceId, setSelectedApplianceId] = useState(
-    initialApplianceId ? Number(initialApplianceId) : MOCK_APPLIANCES[1].id // Default to Whirlpool Washer
+    initialApplianceId ? initialApplianceId.toString() : ''
   );
-
   const [selectedIssueId, setSelectedIssueId] = useState(
-    initialIssueId ? Number(initialIssueId) : MOCK_ISSUES[0].id // Default to vibration issue
+    initialIssueId ? initialIssueId.toString() : ''
   );
 
-  const activeAppliance =
-    MOCK_APPLIANCES.find((a) => a.id === Number(selectedApplianceId)) ||
-    MOCK_APPLIANCES[0];
+  const [applianceLoading, setApplianceLoading] = useState(true);
+  const [issuesLoading, setIssuesLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const activeIssue =
-    MOCK_ISSUES.find((i) => i.id === Number(selectedIssueId)) ||
-    MOCK_ISSUES[0];
+  // Investigation state
+  // 'idle' | 'investigating' | 'success' | 'insufficient_data' | 'error'
+  const [investigationState, setInvestigationState] = useState('idle');
+  const [timelineStepIndex, setTimelineStepIndex] = useState(0);
+  const [report, setReport] = useState(null);
+  const [investigationError, setInvestigationError] = useState('');
 
-  const applianceIssues = MOCK_ISSUES.filter(
-    (i) => i.appliance_id === Number(selectedApplianceId)
-  );
+  useEffect(() => {
+    fetchAppliances();
+  }, []);
+
+  useEffect(() => {
+    if (selectedApplianceId) {
+      fetchIssues(selectedApplianceId);
+    } else {
+      setIssues([]);
+      setSelectedIssueId('');
+    }
+  }, [selectedApplianceId]);
+
+  const fetchAppliances = async () => {
+    try {
+      setApplianceLoading(true);
+      const data = await ApplianceService.getAppliances();
+      setAppliances(data);
+      if (data.length > 0) {
+        if (initialApplianceId && data.some(a => a.id.toString() === initialApplianceId.toString())) {
+          setSelectedApplianceId(initialApplianceId.toString());
+        } else if (!selectedApplianceId) {
+          setSelectedApplianceId(data[0].id.toString());
+        }
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to load appliances');
+    } finally {
+      setApplianceLoading(false);
+    }
+  };
+
+  const fetchIssues = async (appId) => {
+    try {
+      setIssuesLoading(true);
+      const data = await IssueService.getApplianceIssues(appId);
+      setIssues(data);
+      if (data.length > 0) {
+        if (initialIssueId && data.some(i => i.id.toString() === initialIssueId.toString())) {
+          setSelectedIssueId(initialIssueId.toString());
+        } else {
+          setSelectedIssueId(data[0].id.toString());
+        }
+      } else {
+        setSelectedIssueId('');
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to load issues');
+    } finally {
+      setIssuesLoading(false);
+    }
+  };
+
+  const handleInvestigate = async () => {
+    if (!selectedIssueId) return;
+
+    setInvestigationState('investigating');
+    setTimelineStepIndex(0);
+    setReport(null);
+    setInvestigationError('');
+
+    // Start a simulated progress timeline
+    const timelineInterval = setInterval(() => {
+      setTimelineStepIndex((prev) => {
+        if (prev < AGENT_STEPS.length - 1) return prev + 1;
+        return prev; // Stop at the last step ("Preparing recommendation...")
+      });
+    }, 1200);
+
+    try {
+      const data = await AgentService.investigate(selectedIssueId);
+      clearInterval(timelineInterval);
+      setTimelineStepIndex(AGENT_STEPS.length); // complete
+      
+      if (data.analysis_status === 'insufficient_data') {
+        setInvestigationState('insufficient_data');
+      } else {
+        setInvestigationState('success');
+      }
+      setReport(data);
+    } catch (err) {
+      clearInterval(timelineInterval);
+      setInvestigationState('error');
+      setInvestigationError(err.message || 'Diagnostic agent failed to complete investigation.');
+    }
+  };
+
+  const activeAppliance = appliances.find((a) => a.id.toString() === selectedApplianceId);
+  const activeIssue = issues.find((i) => i.id.toString() === selectedIssueId);
 
   return (
     <div className="ai-investigation-page">
@@ -34,33 +135,17 @@ export function AIInvestigationPage({ initialApplianceId, initialIssueId }) {
       />
 
       <div className="investigation-workbench">
-        {/* Phase notice clearly communicating architecture */}
-        <div className="phase-notice-banner">
-          <span className="phase-notice-badge">Architecture Stage</span>
-          <span>
-            Diagnostic workbench layout initialized. Autonomous LangGraph agent reasoning engine will be connected in future phase.
-          </span>
-        </div>
-
-        {/* Appliance & Fault Context Selection */}
+        {/* Selectors */}
         <div className="investigation-selector-bar">
           <div className="selector-group">
             <label className="selector-label">Target Appliance:</label>
             <select
               className="selector-select"
               value={selectedApplianceId}
-              onChange={(e) => {
-                const nextApplianceId = Number(e.target.value);
-                setSelectedApplianceId(nextApplianceId);
-                const nextIssues = MOCK_ISSUES.filter(
-                  (i) => i.appliance_id === nextApplianceId
-                );
-                if (nextIssues.length > 0) {
-                  setSelectedIssueId(nextIssues[0].id);
-                }
-              }}
+              onChange={(e) => setSelectedApplianceId(e.target.value)}
+              disabled={applianceLoading || investigationState === 'investigating'}
             >
-              {MOCK_APPLIANCES.map((a) => (
+              {appliances.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.brand} {a.name} ({a.model_number})
                 </option>
@@ -73,67 +158,65 @@ export function AIInvestigationPage({ initialApplianceId, initialIssueId }) {
             <select
               className="selector-select"
               value={selectedIssueId}
-              onChange={(e) => setSelectedIssueId(Number(e.target.value))}
+              onChange={(e) => setSelectedIssueId(e.target.value)}
+              disabled={issuesLoading || investigationState === 'investigating'}
             >
-              {applianceIssues.length > 0 ? (
-                applianceIssues.map((issue) => (
+              {issues.length > 0 ? (
+                issues.map((issue) => (
                   <option key={issue.id} value={issue.id}>
                     #{issue.id} - {issue.title}
                   </option>
                 ))
               ) : (
-                <option value="">No open issues for this appliance</option>
+                <option value="">No open issues</option>
               )}
             </select>
           </div>
         </div>
 
-        {/* Two-Column Workbench Layout */}
+        {error && <div className="error-banner">{error}</div>}
+
         <div className="workbench-layout">
-          {/* Column 1: Appliance Specs & Evidence Collection */}
+          {/* Column 1: Context */}
           <div className="workbench-column">
             {/* Appliance Profile Card */}
             <div className="workbench-card">
               <div className="workbench-card-header">
                 <div className="card-title-group">
                   <span className="card-step-badge">1</span>
-                  <h2 className="card-title">Appliance Technical Profile</h2>
+                  <h2 className="card-title">Appliance Context</h2>
                 </div>
-                <StatusBadge type="status" value={activeAppliance.category} />
+                {activeAppliance && <StatusBadge type="status" value={activeAppliance.category} />}
               </div>
 
-              <div className="tech-spec-grid">
-                <div className="tech-spec-item">
-                  <span className="tech-spec-label">Brand</span>
-                  <span className="tech-spec-val">{activeAppliance.brand}</span>
+              {activeAppliance ? (
+                <div className="tech-spec-grid">
+                  <div className="tech-spec-item">
+                    <span className="tech-spec-label">Brand</span>
+                    <span className="tech-spec-val">{activeAppliance.brand}</span>
+                  </div>
+                  <div className="tech-spec-item">
+                    <span className="tech-spec-label">Model Identifier</span>
+                    <span className="tech-spec-val" style={{ fontFamily: 'var(--font-mono)' }}>
+                      {activeAppliance.model_number}
+                    </span>
+                  </div>
+                  <div className="tech-spec-item">
+                    <span className="tech-spec-label">Location</span>
+                    <span className="tech-spec-val">{activeAppliance.location}</span>
+                  </div>
                 </div>
-                <div className="tech-spec-item">
-                  <span className="tech-spec-label">Model Identifier</span>
-                  <span className="tech-spec-val" style={{ fontFamily: 'var(--font-mono)' }}>
-                    {activeAppliance.model_number}
-                  </span>
-                </div>
-                <div className="tech-spec-item">
-                  <span className="tech-spec-label">Location</span>
-                  <span className="tech-spec-val">{activeAppliance.location}</span>
-                </div>
-                <div className="tech-spec-item">
-                  <span className="tech-spec-label">Warranty Expiry</span>
-                  <span className="tech-spec-val">{activeAppliance.warranty_expiry || 'None'}</span>
-                </div>
-              </div>
-
-              <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
-                {activeAppliance.notes}
-              </p>
+              ) : (
+                <p className="text-muted">No appliance selected.</p>
+              )}
             </div>
 
-            {/* Evidence & Symptoms Card */}
+            {/* Issue Card */}
             <div className="workbench-card">
               <div className="workbench-card-header">
                 <div className="card-title-group">
                   <span className="card-step-badge">2</span>
-                  <h2 className="card-title">Reported Symptom Evidence</h2>
+                  <h2 className="card-title">Problem & Symptoms</h2>
                 </div>
                 {activeIssue && (
                   <StatusBadge type="severity" value={activeIssue.severity} />
@@ -147,123 +230,166 @@ export function AIInvestigationPage({ initialApplianceId, initialIssueId }) {
                       {activeIssue.title}
                     </div>
                     <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', lineHeight: 1.45 }}>
-                      {activeIssue.description}
+                      {activeIssue.description || 'No detailed description provided.'}
                     </p>
                   </div>
 
                   <div className="symptom-entry-list">
-                    {activeIssue.symptoms && activeIssue.symptoms.map((s) => (
-                      <div key={s.id} className="symptom-entry-row">
-                        <span className="symptom-key">{s.name}</span>
-                        <span className="symptom-reading">{s.value} {s.unit || ''}</span>
-                      </div>
-                    ))}
+                    {activeIssue.symptoms && activeIssue.symptoms.length > 0 ? (
+                      activeIssue.symptoms.map((s) => (
+                        <div key={s.id} className="symptom-entry-row">
+                          <span className="symptom-key">{s.name}</span>
+                          <span className="symptom-reading">{s.value} {s.unit || ''}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-muted">No recorded symptoms.</p>
+                    )}
                   </div>
-
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    style={{ width: '100%', fontSize: '0.75rem' }}
-                    onClick={() => alert('Symptom entry modal will be activated in next phase.')}
-                  >
-                    + Record Additional Symptom Reading
-                  </button>
                 </>
               ) : (
-                <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
-                  No active issue selected.
-                </p>
+                <p className="text-muted">No active issue selected.</p>
               )}
             </div>
+            
+            <button
+              type="button"
+              className="btn btn-primary investigate-btn"
+              disabled={!activeIssue || investigationState === 'investigating'}
+              onClick={handleInvestigate}
+            >
+              {investigationState === 'investigating' ? 'Investigating...' : 'Investigate Problem'}
+            </button>
           </div>
 
-          {/* Column 2: Diagnostic Reasoning Pipeline */}
+          {/* Column 2: Agent Activity & Report */}
           <div className="workbench-column">
             <div className="workbench-card">
               <div className="workbench-card-header">
                 <div className="card-title-group">
                   <span className="card-step-badge">3</span>
-                  <h2 className="card-title">Diagnostic Reasoning Pipeline</h2>
+                  <h2 className="card-title">Investigation Report</h2>
                 </div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                  4 Stages Planned
-                </span>
               </div>
 
-              <div className="pipeline-steps">
-                {/* Stage 1: OEM Manual Lookup */}
-                <div className="pipeline-step">
-                  <div className="pipeline-step-header">
-                    <span className="pipeline-step-name">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-                      </svg>
-                      1. OEM Manual & Service Bulletin Lookup
-                    </span>
-                    <span className="pipeline-step-status">Schematic Indexed</span>
+              <div className="report-container">
+                {investigationState === 'idle' && (
+                  <div className="idle-state">
+                    <p className="text-muted">Select an issue and click "Investigate Problem" to begin.</p>
                   </div>
-                  <div className="pipeline-step-body">
-                    Matched Whirlpool Factory Service Manual W11184320. Fault isolation index verified for high-RPM vibration charts.
-                  </div>
-                </div>
+                )}
 
-                {/* Stage 2: Hypothesis Generation */}
-                <div className="pipeline-step">
-                  <div className="pipeline-step-header">
-                    <span className="pipeline-step-name">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="12" y1="16" x2="12" y2="12" />
-                        <line x1="12" y1="8" x2="12.01" y2="8" />
-                      </svg>
-                      2. Diagnostic Hypothesis Generation
-                    </span>
-                    <span className="pipeline-step-status">Confidence: 89%</span>
-                  </div>
-                  <div className="pipeline-step-body">
-                    Correlation of 88 dB noise and tub slack points to:
-                    <div className="hypothesis-item">
-                      <strong>Primary:</strong> Failed rear drum suspension damper struts (Part #W10738125).
-                    </div>
-                    <div className="hypothesis-item" style={{ borderColor: 'var(--color-border-strong)' }}>
-                      <strong>Secondary:</strong> Unbalanced counterweight or loose shipping bracket remnant.
+                {investigationState === 'investigating' && (
+                  <div className="investigating-state">
+                    <h3>Investigating Problem</h3>
+                    <div className="timeline-container">
+                      {AGENT_STEPS.map((step, idx) => (
+                        <div 
+                          key={idx} 
+                          className={`timeline-step ${idx < timelineStepIndex ? 'completed' : idx === timelineStepIndex ? 'active' : 'pending'}`}
+                        >
+                          <span className="timeline-icon">
+                            {idx < timelineStepIndex ? '✓' : idx === timelineStepIndex ? '●' : '○'}
+                          </span>
+                          <span className="timeline-text">{step}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
+                )}
 
-                {/* Stage 3: Warranty Checking */}
-                <div className="pipeline-step">
-                  <div className="pipeline-step-header">
-                    <span className="pipeline-step-name">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                      </svg>
-                      3. Warranty & Parts Assessment
-                    </span>
-                    <span className="pipeline-step-status">Coverage Expired</span>
+                {investigationState === 'error' && (
+                  <div className="error-state">
+                    <h3>Investigation Failed</h3>
+                    <p>{investigationError}</p>
+                    <button className="btn btn-secondary" onClick={handleInvestigate}>Retry</button>
                   </div>
-                  <div className="pipeline-step-body">
-                    Whirlpool 1-year limited warranty expired on June 20, 2022. Estimated DIY replacement parts cost: $42 - $65. Professional technician service: $180 - $240.
-                  </div>
-                </div>
+                )}
 
-                {/* Stage 4: Recommendation & Coordination */}
-                <div className="pipeline-step">
-                  <div className="pipeline-step-header">
-                    <span className="pipeline-step-name">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polyline points="9 11 12 14 22 4" />
-                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-                      </svg>
-                      4. Repair Recommendation & Service Coordination
-                    </span>
-                    <span className="pipeline-step-status">Action Ready</span>
+                {(investigationState === 'success' || investigationState === 'insufficient_data') && report && (
+                  <div className="report-content">
+                    
+                    {investigationState === 'insufficient_data' && (
+                      <div className="warning-banner">
+                        <strong>Insufficient Data:</strong> {report.summary}
+                      </div>
+                    )}
+                    
+                    {investigationState === 'success' && (
+                      <div className="report-section">
+                        <h3>Problem Summary</h3>
+                        <p>{report.summary}</p>
+                      </div>
+                    )}
+
+                    {report.likely_causes && report.likely_causes.length > 0 && (
+                      <div className="report-section">
+                        <h3>Possible Causes</h3>
+                        <ul className="causes-list">
+                          {report.likely_causes.map((cause, idx) => (
+                            <li key={idx} className={`cause-item ${cause.confidence.toLowerCase()}`}>
+                              <div className="cause-header">
+                                <strong>{cause.cause}</strong>
+                                <span className={`confidence-badge ${cause.confidence.toLowerCase()}`}>
+                                  {cause.confidence}
+                                </span>
+                              </div>
+                              <p className="cause-reason">{cause.reason}</p>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {report.evidence && report.evidence.length > 0 && (
+                      <div className="report-section">
+                        <h3>Evidence</h3>
+                        <ul className="evidence-list">
+                          {report.evidence.map((ev, idx) => (
+                            <li key={idx}>
+                              <strong>{ev.observation}</strong>: {ev.supports}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {report.uncertainty && report.uncertainty !== "No critical uncertainties identified." && (
+                      <div className="report-section">
+                        <h3>What Is Still Uncertain</h3>
+                        <p className="uncertainty-text">{report.uncertainty}</p>
+                      </div>
+                    )}
+
+                    <div className="report-section">
+                      <h3>Recommended Next Step</h3>
+                      <p className="next-step-box">{report.recommended_next_step}</p>
+                    </div>
+
+                    <div className="report-section row-split">
+                      <div className="split-item">
+                        <h3>Service Recommendation</h3>
+                        <p>{report.service_recommendation}</p>
+                      </div>
+                      <div className="split-item">
+                        <h3>Warranty Status</h3>
+                        <p>{report.warranty_recommendation || report.warranty_status}</p>
+                      </div>
+                    </div>
+
+                    {report.repair_history && report.repair_history.length > 0 && (
+                      <div className="report-section">
+                        <h3>Repair History Context</h3>
+                        <ul className="repair-history-list">
+                          {report.repair_history.map((rh, idx) => (
+                            <li key={idx}>{rh}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
                   </div>
-                  <div className="pipeline-step-body">
-                    Structured repair plan generated: Order OEM 4-pack damper kit, remove lower back panel with 1/4-inch nut driver, test damper friction pins.
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>

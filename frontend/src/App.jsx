@@ -3,14 +3,13 @@ import AppLayout from './components/AppLayout';
 import OverviewPage from './pages/OverviewPage';
 import MyAppliancesPage from './pages/MyAppliancesPage';
 import RepairIssuesPage from './pages/RepairIssuesPage';
-import AIInvestigationPage from './pages/AIInvestigationPage';
 import './App.css';
 
 function App() {
   // Read initial tab from URL hash if available
   const getInitialTab = () => {
     const hash = window.location.hash.replace('#', '');
-    if (['overview', 'appliances', 'issues', 'investigation'].includes(hash)) {
+    if (['overview', 'appliances', 'issues'].includes(hash)) {
       return hash;
     }
     return 'overview';
@@ -23,7 +22,7 @@ function App() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
-      if (['overview', 'appliances', 'issues', 'investigation'].includes(hash)) {
+      if (['overview', 'appliances', 'issues'].includes(hash)) {
         setActiveTab(hash);
       }
     };
@@ -50,18 +49,17 @@ function App() {
         <OverviewPage onNavigate={handleNavigate} />
       )}
       {activeTab === 'appliances' && (
-        <MyAppliancesPage onNavigate={handleNavigate} />
+        <MyAppliancesPage
+          onNavigate={handleNavigate}
+          initialApplianceId={navParams.applianceId}
+          initialIssueId={navParams.issueId}
+          autoDiagnose={navParams.autoDiagnose}
+        />
       )}
       {activeTab === 'issues' && (
         <RepairIssuesPage
           onNavigate={handleNavigate}
           filterApplianceId={navParams.applianceId}
-        />
-      )}
-      {activeTab === 'investigation' && (
-        <AIInvestigationPage
-          initialApplianceId={navParams.applianceId}
-          initialIssueId={navParams.issueId}
         />
       )}
     </AppLayout>

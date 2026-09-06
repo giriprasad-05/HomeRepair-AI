@@ -87,6 +87,13 @@ class ApplianceService:
     def soft_delete_appliance(db: Session, appliance_id: int) -> Appliance:
         appliance = ApplianceService.get_appliance_by_id(db, appliance_id)
         appliance.is_active = False
+        # Safely remove related issues, symptoms, repairs, and memories
+        for issue in list(appliance.issues):
+            db.delete(issue)
+        for repair in list(appliance.repairs):
+            db.delete(repair)
+        for memory in list(appliance.memories):
+            db.delete(memory)
         db.commit()
         db.refresh(appliance)
         return appliance

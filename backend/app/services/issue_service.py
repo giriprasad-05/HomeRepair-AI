@@ -79,3 +79,9 @@ class IssueService:
         db.commit()
         db.refresh(issue)
         return issue
+
+    @staticmethod
+    def delete_issue(db: Session, issue_id: int) -> None:
+        issue = IssueService.get_issue_by_id(db, issue_id)
+        db.delete(issue)
+        db.commit()

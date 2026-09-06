@@ -24,6 +24,13 @@ class IssueStatus(str, enum.Enum):
     REPAIR_RECOMMENDED = "repair_recommended"
     REPAIR_IN_PROGRESS = "repair_in_progress"
     RESOLVED = "resolved"
+    FAILED = "failed"
+
+
+class RepairOutcome(str, enum.Enum):
+    SUCCESSFUL = "successful"
+    FAILED = "failed"
+    PARTIALLY_RESOLVED = "partially_resolved"
 
 
 class MemoryType(str, enum.Enum):
@@ -33,3 +40,10 @@ class MemoryType(str, enum.Enum):
     SUCCESSFUL_FIX = "successful_fix"
     FAILED_FIX = "failed_fix"
     MAINTENANCE_PATTERN = "maintenance_pattern"
+
+
+class AnalysisMode(str, enum.Enum):
+    HISTORICAL_MATCH = "historical_match"
+    FRESH_INVESTIGATION = "fresh_investigation"
+    REINVESTIGATION_REQUIRED = "reinvestigation_required"
+    INSUFFICIENT_DATA = "insufficient_data"
