@@ -62,8 +62,12 @@ def investigate_issue(
             detail=f"Agent execution failed: {str(e)}",
         )
 
-    if result.get("error") and not result.get("summary"):
-        error_msg = result["error"]
+    if result.get("analysis_status") == "error" or result.get("error"):
+        error_msg = result.get("error")
+        if not error_msg:
+            # If there's an error status but 'error' key is missing, check 'summary' or 'errors' list
+            error_msg = result.get("summary") or ", ".join(result.get("errors", [])) or "Unknown agent error"
+            
         if "not found" in error_msg.lower():
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

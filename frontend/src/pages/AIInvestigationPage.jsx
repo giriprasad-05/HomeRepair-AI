@@ -112,6 +112,9 @@ export function AIInvestigationPage({ initialApplianceId, initialIssueId } = {})
       
       if (data.analysis_status === 'insufficient_data') {
         setInvestigationState('insufficient_data');
+      } else if (data.analysis_status === 'error') {
+        setInvestigationState('error');
+        setInvestigationError(data.summary || 'Diagnostic agent failed to complete investigation.');
       } else {
         setInvestigationState('success');
       }

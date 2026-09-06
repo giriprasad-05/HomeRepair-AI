@@ -7,10 +7,12 @@ exclusively from environment variables loaded via python-dotenv.
 NO keys or model names are hardcoded here.
 """
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-# Ensure .env is loaded
-load_dotenv(override=True)
+# Ensure .env is loaded reliably from the backend directory
+env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+load_dotenv(dotenv_path=env_path, override=True)
 
 
 def get_llm():
@@ -19,6 +21,9 @@ def get_llm():
     Raises ValueError if OPENROUTER_API_KEY is not set.
     """
     from langchain_openai import ChatOpenAI
+
+    # Reload variables to ensure any dynamic changes to .env are picked up
+    load_dotenv(dotenv_path=env_path, override=True)
 
     api_key = os.getenv("OPENROUTER_API_KEY")
     base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
@@ -37,8 +42,8 @@ def get_llm():
 
     return ChatOpenAI(
         model=model,
-        openai_api_key=api_key,
-        openai_api_base=base_url,
+        api_key=api_key,
+        base_url=base_url,
         temperature=0.2,          # Lower temperature for analytical tasks
         max_tokens=2048,
         request_timeout=30.0,

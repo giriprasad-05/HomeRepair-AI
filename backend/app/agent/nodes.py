@@ -384,10 +384,7 @@ def analyze_warranty_node(state: AgentState, db: Session) -> Dict:
     errors = list(state.get("errors") or [])
     w_info = {}
     try:
-        w_info = evaluate_warranty(
-            purchase_date_str=appliance_ctx.get("purchase_date"),
-            expiry_date_str=appliance_ctx.get("warranty_expiry"),
-        )
+        w_info = check_warranty_status(db=db, appliance_id=state["appliance_id"])
     except Exception as e:
         errors.append(f"Warranty evaluation error: {e}")
 
@@ -692,9 +689,36 @@ def llm_synthesis_node(state: AgentState, db: Session) -> Dict:
 
     errors = list(state.get("errors") or [])
     recommendation = None
+    print("\n[DEBUG-AGENT] 1. Entered llm_synthesis_node")
 
     try:
-        llm: ChatOpenAI = get_llm()
+        import httpx
+        import os
+        from dotenv import load_dotenv
+        from pathlib import Path
+        import json
+        import re
+        import logging
+
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger(__name__)
+
+        env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+        load_dotenv(dotenv_path=env_path, override=True)
+
+        api_key = os.getenv("OPENROUTER_API_KEY")
+        base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+        model = os.getenv("OPENROUTER_MODEL")
+
+        print(f"\n[DEBUG-AGENT] 2. Loaded OPENROUTER_MODEL from env: {model}")
+        print(f"[DEBUG-AGENT] 3. Target URL will be: {base_url}/chat/completions")
+        logger.info(f"--- [DEBUG] loaded model name: {model}")
+        logger.info(f"--- [DEBUG] request URL: {base_url}/chat/completions")
+
+        if not api_key:
+            raise ValueError("OPENROUTER_API_KEY is not set.")
+        if not model:
+            raise ValueError("OPENROUTER_MODEL is not set.")
 
         issue_ctx = state.get("issue_context") or {}
         appliance_ctx = state.get("appliance_context") or {}
@@ -747,34 +771,70 @@ RELEVANT APPLIANCE MEMORIES:
 {chr(10).join(f"  - [{m['type']}] {m['content'][:200]}" for m in memories[:5]) or '  No prior memories.'}
 """
 
-        messages = [
-            SystemMessage(content=SYNTHESIS_SYSTEM_PROMPT),
-            HumanMessage(content=f"Based on this evidence, provide a diagnostic recommendation in JSON format:\n\n{evidence_text}"),
-        ]
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "HTTP-Referer": "https://homerepair-ai.local",
+            "X-Title": "HomeRepair AI",
+            "Content-Type": "application/json"
+        }
 
-        response = llm.invoke(messages)
-        content = response.content.strip() if response.content else ""
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": SYNTHESIS_SYSTEM_PROMPT},
+                {"role": "user", "content": f"Based on this evidence, provide a diagnostic recommendation in JSON format:\n\n{evidence_text}"}
+            ],
+            "temperature": 0.2,
+            "max_tokens": 2048,
+        }
 
-        # Strip potential markdown code block wrappers
-        if content.startswith("```json"):
-            content = content[7:]
-        elif content.startswith("```"):
-            content = content[3:]
-        if content.endswith("```"):
-            content = content[:-3]
+        print("\n[DEBUG-AGENT] 4. Sending payload to OpenRouter...")
+        logger.info("--- [DEBUG] Sending HTTP POST to OpenRouter ---")
+        try:
+            with httpx.Client(timeout=30.0) as client:
+                response = client.post(f"{base_url.rstrip('/')}/chat/completions", headers=headers, json=payload)
+            print(f"[DEBUG-AGENT] 5. Received HTTP status code: {response.status_code}")
+            logger.info(f"--- [DEBUG] HTTP status code: {response.status_code}")
+            
+            if response.status_code != 200:
+                print(f"[DEBUG-AGENT] 6. ERROR response text: {response.text}")
+                logger.error(f"--- [DEBUG] OpenRouter error response: {response.text}")
+                response.raise_for_status()
+
+            response_json = response.json()
+            content = response_json.get("choices", [{}])[0].get("message", {}).get("content", "")
+            content = content.strip() if content else ""
+            logger.info("--- [DEBUG] OpenRouter success response parsed.")
+        except Exception as e:
+            logger.error(f"--- [DEBUG] HTTP request failed: {e}")
+            raise
+
+        # Extract JSON block using regex if wrapped in markdown
+        json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', content, re.DOTALL | re.IGNORECASE)
+        if json_match:
+            content = json_match.group(1)
+        else:
+            # If no code block, try to find the outermost curly braces
+            brace_match = re.search(r'(\{.*\})', content, re.DOTALL)
+            if brace_match:
+                content = brace_match.group(1)
 
         parsed_response = json.loads(content.strip())
         recommendation = parsed_response
+        print(f"[DEBUG-AGENT] 7. Successfully parsed JSON from OpenRouter.")
 
     except json.JSONDecodeError as e:
+        print(f"[DEBUG-AGENT] 8. JSON Decode Error: {e}")
         errors.append(f"Failed to parse LLM JSON: {e}")
-        recommendation = {"error": "LLM returned invalid JSON structure."}
+        recommendation = {"error": f"LLM returned invalid JSON structure: {str(e)}\nRaw output: {content}"}
     except ValueError as e:
+        print(f"[DEBUG-AGENT] 8. Value Error (likely config): {e}")
         errors.append(f"LLM configuration error: {e}")
-        recommendation = {"error": "LLM synthesis unavailable. Please check OPENROUTER_API_KEY and OPENROUTER_MODEL in your .env file."}
+        recommendation = {"error": f"LLM synthesis unavailable: {str(e)}. Please check OPENROUTER_API_KEY and OPENROUTER_MODEL in your .env file."}
     except Exception as e:
+        print(f"[DEBUG-AGENT] 8. Exception in LLM HTTP call: {e}")
         errors.append(f"LLM synthesis error: {e}")
-        recommendation = {"error": "AI synthesis could not be completed at this time."}
+        recommendation = {"error": f"OpenRouter API error: {str(e)}"}
 
     log = (state.get("activity_log") or []) + ["Prepared recommendation."]
     return {
@@ -992,19 +1052,24 @@ def finalize_result_node(state: AgentState, db: Session) -> Dict:
         return {"final_result": existing_final}
 
     rec = state.get("recommendation")
-    if isinstance(rec, dict) and "error" not in rec:
-        parsed_rec = rec
-    else:
+    has_error = isinstance(rec, dict) and "error" in rec
+    if has_error:
         parsed_rec = {}
+        error_msg = rec["error"]
+    else:
+        parsed_rec = rec if isinstance(rec, dict) else {}
+        error_msg = None
 
     insufficient = not state.get("_evidence_sufficient", False)
     mode = state.get("analysis_mode", "fresh_investigation")
     analysis_status = "insufficient_data" if insufficient else "completed"
+    if has_error:
+        analysis_status = "error"
 
     default_summary = (
         "Diagnostic paused: Insufficient problem details recorded to establish a conclusive root cause."
         if insufficient else
-        "Analysis incomplete due to insufficient data or error."
+        error_msg if error_msg else "Analysis incomplete due to insufficient data or error."
     )
     default_next_step = (
         "Please review the targeted questions in 'What Is Still Uncertain' and provide more problem details before re-running."
